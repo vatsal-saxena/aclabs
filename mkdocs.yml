@@ -70,6 +70,9 @@ markdown_extensions:
   - admonition
   - footnotes
   - pymdownx.details
+  - pymdownx.snippets:
+      base_path: [docs]
+      check_paths: true
   - pymdownx.superfences
   - pymdownx.critic
   - pymdownx.caret
