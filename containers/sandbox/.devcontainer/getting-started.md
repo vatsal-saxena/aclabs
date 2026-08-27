@@ -42,11 +42,19 @@ Pick the button that matches what you're trying to do:
 
 ### 🎨 Start Building!
 
-> *"I want to design a new topology from scratch."*
+> *"Open a topology in the drag-and-drop designer."*
 
-Opens the ContainerLab Topology Designer. Drag nodes onto a canvas, wire them
-up, save the result as a topology file. Best for greenfield labs where you
-don't have a starting point.
+Opens your topology in the ContainerLab Topology Designer — drag nodes onto
+the canvas, wire them up, and the YAML updates behind the scenes. Great for
+greenfield designs *and* for visually editing a lab you cloned, borrowed,
+or imported.
+
+Start Building finds your topology the same way **Start** does: if the
+workspace has exactly one `.clab.yml`, you go straight into the designer;
+if there are several — or files that need the `.clab.yml` rename (see the
+naming-convention note under **Start**) — you'll get the same picker. Your
+choice becomes the **Working Topology** shared with Start and friends, so
+designing and then deploying is one pick, not two.
 
 ### 📥 Import Lab
 
@@ -57,49 +65,79 @@ A file picker opens in your browser so you can pick a `.tar`, `.tar.gz`,
 streams the file into the sandbox in 4 MB chunks with a real progress bar,
 bitrate, and ETA — even multi-hundred-MB archives upload reliably.
 
-The lab replaces your current workspace contents, so existing files will be
-permanently deleted. If a lab is currently running, the dashboard will
-destroy it (`containerlab destroy --cleanup`, no save) before wiping the
-workspace — the destructive-confirmation modal will tell you exactly what's
-about to happen so there are no surprises.
+After picking the archive, you'll be asked **where** to land it:
+
+- **Replace workspace** — wipes your current workspace contents (and
+  destroys any running lab via `containerlab destroy --cleanup`, no save)
+  before extracting the archive at the workspace root. Best for *"I want
+  this lab to BE my workspace."* The destructive-confirmation modal will
+  tell you exactly what's about to be wiped so there are no surprises.
+- **Import into subfolder** — keeps your existing workspace and any
+  running labs untouched. The archive is extracted into a new subdirectory
+  named after the archive (e.g., `my-cool-lab.tar.gz` → `./my-cool-lab/`).
+  Best for *"I want this lab alongside the other labs I'm working on"* —
+  the "one-repo-many-labs" workflow where each top-level directory in your
+  workspace is its own lab. Subfolder mode refuses if the target directory
+  already exists, so nothing gets silently overwritten.
 
 ### 🐙 Clone from GitHub
 
 > *"I want to work with an existing GitHub repo."*
 
 Enter the repo URL (public or private — you'll be prompted to authenticate
-for private repos). After the URL, you'll be asked **how** you want to use
-the repo:
+for private repos). After the URL, you'll be asked **where** to land the
+cloned content:
 
-- **Track this repo** — keep the existing git history and remote. Push to
-  GitHub will push back to the source repo (if you have access). Use this
-  when you genuinely want to contribute back.
-- **Use as a starting template** — strip the git history and start fresh as
-  your own. Push to GitHub will publish to a new repo of your choice. Use
-  this when you want the bones of someone's repo but plan to make it your
-  own thing.
+- **Replace workspace** — wipes your current workspace contents (and
+  destroys any running lab via `containerlab destroy --cleanup`, no save)
+  before cloning the repo at the workspace root. You'll then be asked
+  **how** you want to use the repo:
+  - **Track this repo** — keep the existing git history and remote. Push
+    to GitHub will push back to the source repo (if you have access). Use
+    this when you genuinely want to contribute back.
+  - **Use as a starting template** — strip the git history and start fresh
+    as your own. Push to GitHub will publish to a new repo of your choice.
+    Use this when you want the bones of someone's repo but plan to make it
+    your own thing.
 
-Like Import, this replaces your current workspace contents — and if a lab
-is currently running, it will be destroyed (`containerlab destroy --cleanup`,
-no save) before the wipe. The destructive-confirmation modal will disclose
-both the files to be removed AND any running labs to be destroyed.
+  The destructive-confirmation modal will disclose both the files to be
+  removed AND any running labs to be destroyed.
+
+- **Import into subfolder — no git history** — keeps your existing
+  workspace and any running labs untouched. The repo is cloned into a new
+  subdirectory named after the repo (e.g., `https://github.com/foo/evpn-gw-demo.git`
+  → `./evpn-gw-demo/`), and the `.git` directory is **removed** so you get
+  the lab files without the upstream tracking. Best for the
+  "one-repo-many-labs" workflow where each top-level directory in your
+  workspace is its own lab. Subfolder mode refuses if the target directory
+  already exists.
+
+  ⚠️ **Note:** Because subfolder mode strips the `.git` directory, you
+  can't pull updates from the source or push changes back to it. If you
+  want either of those, pick **Replace workspace** instead.
 
 ### 📚 Borrow from Tech Library
 
 > *"Show me the curated starter labs and let me grab one."*
 
-Shows a list of labs from the Arista Tech Library. Pick one and it lands
-in your workspace, ready to be edited. Best for "I want a known-good
-starting point but I'm not sure what shape my topology needs yet."
+Shows a list of labs from the Arista Tech Library — best for *"I want a
+known-good starting point but I'm not sure what shape my topology needs
+yet."* Pick one and you'll be asked **where** to land it:
 
-The borrow happens without initializing a git repo, so your sidebar stays
-quiet (no untracked-file noise) unless you explicitly opt into source
-control. When you're ready to publish your changes, **Push to GitHub** will
-initialize the git repo and create a fresh remote for you.
-
-Like Import and Clone, Borrow replaces your current workspace contents —
-and if a lab is currently running, it will be destroyed
-(`containerlab destroy --cleanup`, no save) before the wipe.
+- **Replace workspace** — wipes your current workspace contents (and
+  destroys any running lab via `containerlab destroy --cleanup`, no save)
+  before extracting the borrowed lab at the workspace root. The borrow
+  happens without initializing a git repo, so your sidebar stays quiet
+  (no untracked-file noise) unless you explicitly opt into source control.
+  When you're ready to publish your changes, **Push to GitHub** will
+  initialize the git repo and create a fresh remote for you.
+- **Import into subfolder** — keeps your existing workspace and any
+  running labs untouched. The borrowed lab is extracted into a new
+  subdirectory named after the lab (e.g., `mlag-fabric` →
+  `./mlag-fabric/`). Best for the "one-repo-many-labs" workflow — borrow
+  multiple labs from the Tech Library into a single workspace, each in
+  its own top-level directory. Subfolder mode refuses if the target
+  directory already exists.
 
 ---
 
@@ -112,8 +150,64 @@ is where you'll spend most of your time:
 
 > *"Deploy the topology to ContainerLab."*
 
-Spins up the nodes defined in your `topology.clab.yml` file. ContainerLab
+Spins up the nodes defined in your topology file. ContainerLab
 does the heavy lifting; the dashboard just gives you a one-click trigger.
+
+#### 📛 About the `.clab.yml` naming convention
+
+Both ContainerLab and the sandbox-dashboard look for topology files
+matching `*.clab.yml` (or `*.clab.yaml`). The convention is what enables:
+
+- **The dashboard's topology discovery** — Start, Open Topology File,
+  Topology View, and Snapshot Lab all find your topology automatically
+  when it follows the convention.
+- **The ContainerLab VS Code extension** — its inline preview, hover
+  tips, and richer node interactions all key off the `.clab.yml`
+  extension. Files without it look like generic YAML to the extension.
+
+If your workspace has `.yml` files that look like topologies but don't
+follow the convention (e.g., `lab.yml`, `mytopology.yml`), the
+dashboard's topology picker — shared by **Start**, **Start Building!**,
+and **Open Topology File** — will surface them as rename suggestions
+alongside any already-correctly-named files:
+
+> Pick a topology to deploy (or rename a misnamed file)
+> ▶ Use "techlib-mlag-fabric/clab/topology.clab.yml"
+> ✏️ Rename "evpn-gw-demo/evpn-gw.yml" → "evpn-gw.clab.yml" and use
+> 📂 Pick a file anyway
+> 🔕 Skip rename suggestions for this session
+
+The dashboard recognizes a file as a "topology in need of renaming" only
+when it parses cleanly and has a `topology.nodes:` key — random `.yml`
+files in your workspace (Ansible playbooks, AVD vars, CI configs) won't
+appear as rename suggestions, only actual topology files. Picking a
+rename action does the rename atomically and proceeds straight into
+deploy, so renaming costs you one click.
+
+You can always click **Pick a file anyway** if you want to deploy a
+file with a non-standard name; the dashboard will deploy it as-is. But
+some features (like the ContainerLab extension's preview) require the
+convention, so renaming is usually worth the click.
+
+### 📌 Working Topology
+
+> *"Which topology are my buttons acting on?"*
+
+The first time a session needs a topology — you click **Start**,
+**Start Building!**, or **Open Topology File** and either auto-use the
+only `.clab.yml` or choose one from the picker — the dashboard
+**remembers that choice** as your *working topology*. Every
+topology-using button then acts on it without re-asking, so
+build → deploy → edit flows feel seamless.
+
+You'll always know what's remembered: a **Working Topology card**
+appears beneath the action rows showing the file's path, with a
+**🧹 Clear** button. Picked the wrong lab, or want to switch? Click
+**Clear** (or run `Sandbox Dashboard: Clear Remembered Topology` from
+the Command Palette) and the next topology-using button will prompt you
+fresh. The memory also clears itself when you **Stop** a lab in a
+multi-topology workspace (see *After Stop* below) or when the
+remembered file disappears. No card showing = nothing remembered.
 
 ### 🗺️ Topology View
 
@@ -131,7 +225,9 @@ Opens the ContainerLab Topology Viewer in a new tab. From there:
 
 > *"I want to edit the YAML directly."*
 
-Opens your `topology.clab.yml` in an editor tab. Useful for tweaks the
+Opens your topology file in an editor tab — found the same way **Start**
+finds it (a lone file opens directly; several bring up the picker; your
+**Working Topology** wins if one is remembered). Useful for tweaks the
 designer doesn't expose.
 
 ### 💻 Open Terminal
@@ -159,6 +255,15 @@ When you click Stop, the dashboard asks how you want to leave the lab:
   the running containers are destroyed. Use this when you're done testing
   or you don't care about preserving the running config (e.g., before
   making large topology changes that would invalidate it anyway).
+
+**After Stop:** if your workspace has multiple topology files (the
+one-repo-many-labs workflow), the next Start will prompt you to pick
+which lab to deploy — useful when your intent is to switch between
+labs rather than redeploy the same one. If your workspace has just
+one topology, the next Start uses it directly with no prompt. (In the
+multi-topology case your **Working Topology** card clears at the same
+time — and you can always click its **🧹 Clear** button to get a fresh
+prompt without stopping anything.)
 
 ### 💾 Snapshot Lab
 
@@ -274,7 +379,12 @@ A QuickPick offers two paths — pick the one that matches what you have:
   into Docker. You'll be prompted for your arista.com token on first use
   (saved securely after that), then for the version you want (e.g.,
   `4.35.4M`). If the image is already cached locally, the dashboard tells
-  you up front and offers a Force Re-download escape hatch.
+  you up front and offers a Force Re-download escape hatch. And if
+  arista.com's **browser-verification check** blocks the automated
+  download (an anti-bot measure on Arista's side — your token is fine),
+  the dashboard explains what happened and walks you through the
+  recovery: download the image in your browser, then use **Upload from
+  local machine** below.
 - **Upload from local machine.** A file picker opens for you to choose a
   `.tar`, `.tar.gz`, or `.tar.xz` cEOS-lab image you've already downloaded —
   useful for custom builds, archived versions, or images supplied by your
@@ -289,9 +399,27 @@ ready to reference in your `topology.clab.yml` as `image: arista/ceos:<your-tag>
 
 > *"Connect this lab's switches to my CVaaS tenant."*
 
-Wires the running nodes in your lab up to a CVaaS tenant so you can manage
-them from CVaaS just like production switches. Pairs naturally with
-**Reserve a CVaaS Tenant** if you don't already have a tenant.
+A guided flow wires every running cEOS node up to a CVaaS tenant so you
+can manage them from CVaaS just like production switches:
+
+1. **Pick a tenant** (pairs naturally with **Reserve a CVaaS Tenant**
+   if you don't have one).
+2. **Pick the management VRF** — **MGMT** is pre-selected, since that's
+   what the sandbox labs use; *Default (no VRF)* and custom names are a
+   click away.
+3. **Token** — your saved onboarding token is offered as **Keep current
+   token**, or pick **Enter a new token** to fix a typo or target a
+   different CVaaS instance.
+
+The dashboard then checks each node's DNS/NTP prerequisites and
+configures only what's missing — existing node config is left alone.
+One special case it catches for you: if your nodes already have NTP in
+a *different* VRF than the one you selected, EOS won't allow both. The
+dashboard detects that conflict **before touching anything** and lets
+you choose — adopt the existing VRF (nothing on your nodes changes) or
+remove-and-replace it with your selection. Nodes onboard concurrently
+with per-node results, and re-running is safe: already-onboarded nodes
+are handled gracefully.
 
 ### 📦 Change AVD Version
 
@@ -317,6 +445,19 @@ You'll get a confirmation prompt before any existing version is replaced.
 - **Most actions are reversible.** Cloned the wrong repo? Click Reset and
   start over. Imported the wrong lab archive? Reset. The dashboard is designed
   to encourage experimentation.
+- **Subfolder mode is non-destructive.** Borrow, Import, and Clone all
+  offer an "Import into subfolder" mode that leaves your workspace and
+  any running labs untouched. If you decide you don't want the subfolder
+  later, just delete it — no need to reset the whole workspace.
+- **Name your topology files `*.clab.yml`** to unlock dashboard
+  discovery and the ContainerLab VS Code extension's inline features.
+  If a file you cloned or borrowed doesn't follow the convention, the
+  topology picker will offer to rename it for you. See the Start section
+  above for more.
+- **The Working Topology card remembers your pick.** Once you've chosen
+  a topology, Start / Start Building / Open Topology File all act on it
+  without re-asking — and the card's **🧹 Clear** button is the one-click
+  way to switch labs or undo a wrong pick.
 - **The ContainerLab VS Code Extension** is also pre-installed and gives
   you richer interaction with running labs (look for the ContainerLab icon
   in the activity bar on the far left). The dashboard's Topology View

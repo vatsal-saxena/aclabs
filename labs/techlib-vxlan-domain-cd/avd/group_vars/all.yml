@@ -1,0 +1,122 @@
+---
+
+ansible_connection: ansible.netcommon.httpapi
+ansible_network_os: arista.eos.eos
+ansible_user: admin
+ansible_password: admin
+ansible_become: true
+ansible_become_method: enable
+ansible_httpapi_port: 443
+ansible_httpapi_use_ssl: true
+ansible_httpapi_validate_certs: false
+ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+custom_platform_settings:
+  - platforms: [cEOSLab]
+    feature_support:
+      bgp_update_wait_install: true
+      bgp_update_wait_for_convergence: false
+      evpn_gateway_all_active_multihoming: true
+      evpn_gateway_rd_rt_rewrite: true
+      hardware_validation: false
+      interface_storm_control: false
+      per_interface_l2_mru: false
+      per_interface_l2_mtu: false
+      queue_monitor_length_notify: false
+      sflow_subinterfaces: false
+      subinterface_mtu: false
+    raw_eos_cli: |-
+      no service interface inactive port-id allocation disabled
+
+backbone_evpn_peers:
+  - hostname: BB1
+    ip_address: 2001:db8:bb::1
+    bgp_as: '65000'
+  - hostname: BB2
+    ip_address: 2001:db8:bb::2
+    bgp_as: '65000'
+
+mgmt_gateway: 172.100.100.1
+mgmt_interface_settings:
+  interface: Management0
+  vrf: MGMT
+  description: OOB_MANAGEMENT
+default_mgmt_method: oob
+
+management_eapi:
+  enabled: true
+  vrfs:
+    - name: use_mgmt_interface_vrf
+      enabled: true
+
+aaa_settings:
+  authentication:
+    policies:
+      local:
+        allow_nopassword: true
+  authorization:
+    exec:
+      default: local
+  local_users:
+    - name: admin
+      privilege: 15
+      role: network-admin
+      no_password: true
+
+dns_settings:
+  domain: aclabs.lab
+  servers:
+    - ip_address: 8.8.8.8
+      vrf: use_mgmt_interface_vrf
+
+ntp_settings:
+  server_vrf: use_mgmt_interface_vrf
+  servers:
+    - name: time.google.com
+      iburst: true
+    - name: time.apple.com
+      iburst: true
+    - name: time.windows.com
+      iburst: true
+
+source_interfaces:
+  http_client:
+    mgmt_interface: true
+  ssh_client:
+    mgmt_interface: true
+
+timezone: America/Detroit
+
+event_monitor:
+  enabled: true
+
+custom_structured_configuration_aaa_root:
+  disabled: true
+
+custom_structured_configuration_system:
+  l1:
+    unsupported_speed_action: error
+    unsupported_error_correction_action: error
+
+custom_structured_configuration_load_interval:
+  default: 1
+
+custom_structured_configuration_eos_config_future:
+  render_spanning_tree_portfast_edge: true
+
+bgp_distance:
+  external_routes: 20
+  internal_routes: 200
+  local_routes: 200
+
+custom_structured_configuration_router_bgp:
+  neighbor_default:
+    send_community: all
+
+bfd_multihop:
+  interval: 1000
+  min_rx: 1000
+  multiplier: 3
+
+avd_design_future:
+  remove_redundant_ipv4_unicast_for_peer_groups: true
